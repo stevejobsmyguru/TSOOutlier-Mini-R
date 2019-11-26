@@ -141,7 +141,6 @@ KF <- function(y, ss, convergence = c(0.001, length(y)), t0 = 1)
   list(v = v, f = f, K = K, L = L, a.upd = a.upd, P.upd = P.upd[,,-1],
      a.pred = a.pred, P.pred = P.pred, mll = mll, convit = convit)
   
-  mll
 }
 
 KF.C <- function(y, ss, convergence = c(0.001, length(y)), t0 = 1) #sUP = 1
