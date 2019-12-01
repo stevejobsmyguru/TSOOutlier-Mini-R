@@ -328,3 +328,4 @@ stopifnot(ncol(xreg) == 0)
   list(xreg = xreg, xregcoefs = xregcoefs, xregtstats = tstats, 
     iter = iter, fit = fit, outliers = moall)
 }
+
