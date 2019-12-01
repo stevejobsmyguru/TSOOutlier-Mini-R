@@ -282,7 +282,8 @@ locate.outliers.oloop <- function(y, fit, types = c("AO", "LS", "TC"),
 
     pars <- switch(tsmethod, 
       "auto.arima" = , "arima" = coefs2poly(fit),
-      "stsm" = stsm::char2numeric(fit$model))
+      #"stsm" = stsm::char2numeric(fit$model)) #Hari is trying undok stsm to
+      "stsm" = char2numeric(fit$model)) #Hari is trying undok stsm to
 
     ##NOTE by default residuals(fit, standardised = FALSE) 
     # only relevant for "stsm" but the argument could set here 

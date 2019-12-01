@@ -196,7 +196,8 @@ if (tsmethod == "stsm")
 
     pars <- switch(tsmethod, 
       "auto.arima" = , "arima" = coefs2poly(res0$fit),
-      "stsm" = stsm::char2numeric(res0$fit$model))
+      #"stsm" = stsm::char2numeric(res0$fit$model)) #Hari is trying to undock stsm package
+      "stsm" = char2numeric(res0$fit$model))
 
     # 'xreg': input regressor variables such as calendar effects (if any)
     # 'xreg.outl': outliers regressor variables detected above (if any)
