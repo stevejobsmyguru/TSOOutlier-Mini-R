@@ -17,9 +17,8 @@ KalmanFilter <- function(y, ss,
     "KFKSDS" = 
     {
       res <- list(mloglik = 
-        KF.C(y, ss, convergence = a$convergence, t0 = a$t0)
-        #KF(y, ss, convergence = a$convergence, t0 = a$t0)
-        #KF.deriv(y, ss, convergence = a$convergence, t0 = a$t0)
+        #KF.C(y, ss, convergence = a$convergence, t0 = a$t0) #Hari disabled it
+          KF_Pure_R(y, ss, convergence = a$convergence, t0 = a$t0) #Hari enabled R version of KF
       )
     },
 

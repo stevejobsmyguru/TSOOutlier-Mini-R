@@ -1,6 +1,7 @@
 
 maxlik.td.optim <- function(m, 
-  KF.version = eval(formals(KFKSDS::KalmanFilter)$KF.version),
+  #KF.version = eval(formals(KFKSDS::KalmanFilter)$KF.version), #Hari undcking KFKSDS PAkage
+  KF.version = "KFKSDS",
   KF.args = list(), check.KF.args = TRUE,
   barrier = list(type = c("1", "2"), mu = 0), inf = 99999, 
   method = c("BFGS", "L-BFGS-B", "Nelder-Mead", "CG", "SANN", "AB-NM"),

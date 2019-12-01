@@ -70,7 +70,8 @@ outliers.effects <- function(mo, n, weights = FALSE, delta = 0.7,
         #I <- ts(rep(0, n + n.start), start = start(resid), frequency = frequency(resid))
         I[] <- 0  
         I[n.start] <- 1
-        tmp <- KFKSDS::KF(I, pars)
+        #tmp <- KFKSDS::KF(I, pars) #Hari undocked KFKSDS Package
+        tmp <- KF(I, pars)
         f <- tmp$v[-seq.int(n.start-1)]
 ##FIXME see how to avoid remove last element this way (see doc)
         m[,i] <- f[-length(f)]

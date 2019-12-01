@@ -32,7 +32,8 @@ outliers.regressors.stsmSS <- function(pars, mo, n, weights = TRUE,
 ##FIXME see if KF in BSM or llmseas requires "I" to be defined as a "ts" object
   I <- rep(0, n + n.start)
   I[n.start] <- 1
-  tmp <- KFKSDS::KF(I, pars)
+  #tmp <- KFKSDS::KF(I, pars) #Hari undocked KFKSDS
+  tmp <- KF(I, pars)
 ##NOTE
 #aoxregt1 is "f" in tstatsSTSM()
 #pi(L) I(t=1)

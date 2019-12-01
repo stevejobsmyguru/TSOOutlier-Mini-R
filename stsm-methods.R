@@ -1,3 +1,27 @@
+setClassUnion("OptionalNumeric", c("numeric", "NULL"))
+setClassUnion("OptionalInteger", c("integer", "NULL"))
+setClassUnion("OptionalCharacterORListORFunction", c("character", "list", "function", "NULL"))
+setClassUnion("OptionalMatrix", c("matrix", "NULL"))
+setClassUnion("OptionalMatrixNumeric", c("matrix", "numeric", "NULL"))
+
+setClass(Class = "stsm",
+         representation = representation(
+           call = "language",
+           model = "character",
+           y = "ts",
+           diffy = "ts",
+           xreg = "OptionalMatrixNumeric",
+           fdiff = "function",
+           ss = "list",
+           pars = "numeric",
+           nopars = "OptionalNumeric",
+           cpar = "OptionalNumeric",
+           lower = "numeric",
+           upper = "numeric",
+           transPars = "OptionalCharacterORListORFunction",
+           ssd = "OptionalNumeric", #sample spectral density (periodogram)
+           sgfc = "OptionalMatrix") # constant terms in the spectral generating function
+)
 
 setGeneric("get.pars", function(x, rescale = FALSE, gradient = FALSE){
   standardGeneric("get.pars") })
@@ -23,17 +47,17 @@ setMethod("get.pars", "stsm", function(x, rescale = FALSE, gradient = FALSE)
   if (gradient)
     return(list(pars = p, gradient = tmp$gradient))
 
-  p  
+  p
 })
 
-setGeneric("get.nopars", function(x, rescale = FALSE){ 
+setGeneric("get.nopars", function(x, rescale = FALSE){
   standardGeneric("get.nopars") })
 setMethod("get.nopars", "stsm", function(x, rescale = FALSE)
 {
-  # relative variances if 'cpar' is not null, 
+  # relative variances if 'cpar' is not null,
   # otherwise absolute variances
   p <- x@nopars
- 
+
   if (rescale)
   {
     idvars <- grep("^var\\d{1,2}$", names(x@pars))
@@ -41,7 +65,7 @@ setMethod("get.nopars", "stsm", function(x, rescale = FALSE)
     if (!is.null(x@cpar)) # 'x@pars' are relative variances
     {
       # absolute variances
-      p[idvars] <- p[idvars] * x@cpar 
+      p[idvars] <- p[idvars] * x@cpar
     } else {
       warning("'rescale = TRUE' had no effect since slot 'cpar' is NULL.")
     }
@@ -61,7 +85,7 @@ setMethod("get.cpar", "stsm", function(x, rescale = FALSE)
   {
     p[] <- 1 # p / p
   }
-  
+
   # if 'rescale' is TRUE and x@cpar is NULL
   # NULL (x@cpar) is returned
   # no warning is given, output NULL is revealing enough
@@ -73,7 +97,7 @@ setGeneric("set.pars", function(x, v, check = TRUE, inplace = FALSE){
   standardGeneric("set.pars") })
 setMethod("set.pars", "stsm", function(x, v, check = TRUE, inplace = FALSE)
 {
-  nms <- names(v)  
+  nms <- names(v)
   if (is.null(nms)) {
     nullnms <- TRUE
     nms <- seq_along(x@pars)
@@ -83,7 +107,7 @@ setMethod("set.pars", "stsm", function(x, v, check = TRUE, inplace = FALSE)
   {
     if (inplace) {
       #http://tolstoy.newcastle.edu.au/R/help/04/02/0966.html
-      eval(eval(substitute(expression(x@pars[nms] <<- v))))      
+      eval(eval(substitute(expression(x@pars[nms] <<- v))))
     } else x@pars[nms] <- v
   } else
     stop("Wrong class of argument 'v'.")
@@ -100,11 +124,11 @@ setMethod("set.pars", "stsm", function(x, v, check = TRUE, inplace = FALSE)
   ifelse(inplace, return(invisible()), return(x))
 })
 
-setGeneric("set.nopars", function(x, v, check = TRUE, inplace = FALSE){ 
+setGeneric("set.nopars", function(x, v, check = TRUE, inplace = FALSE){
   standardGeneric("set.nopars") })
 setMethod("set.nopars", "stsm", function(x, v, check = TRUE, inplace = FALSE)
 {
-  nms <- names(v)  
+  nms <- names(v)
   if (is.null(nms)) {
     nullnms <- TRUE
     nms <- seq_along(x@nopars)
@@ -114,7 +138,7 @@ setMethod("set.nopars", "stsm", function(x, v, check = TRUE, inplace = FALSE)
   {
     if (inplace) {
       #http://tolstoy.newcastle.edu.au/R/help/04/02/0966.html
-      eval(eval(substitute(expression(x@nopars[nms] <<- v))))      
+      eval(eval(substitute(expression(x@nopars[nms] <<- v))))
     } else x@nopars[nms] <- v
   } else
     stop("Wrong class of argument 'v'.")
@@ -137,13 +161,13 @@ setMethod("set.cpar", "stsm", function(x, value, check = TRUE, inplace = FALSE)
 {
   if (is.null(x@cpar))
   {
-    return(warning("Nothing done. ", 
+    return(warning("Nothing done. ",
       "The model is not defined in terms of relative variances ",
       "(slot 'cpar' is null)."))
   }
 
   if (is.numeric(value))
-  {    
+  {
     if (inplace) {
       #http://tolstoy.newcastle.edu.au/R/help/04/02/0966.html
       eval(eval(substitute(expression(x@cpar[] <<- value))))
@@ -157,13 +181,13 @@ setMethod("set.cpar", "stsm", function(x, value, check = TRUE, inplace = FALSE)
   ifelse(inplace, return(invisible()), return(x))
 })
 
-setGeneric("set.sgfc", function(x, inplace = FALSE){ 
+setGeneric("set.sgfc", function(x, inplace = FALSE){
   standardGeneric("set.sgfc") })
 setMethod("set.sgfc", "stsm", function(x, inplace = FALSE)
 {
   if (!is.null(x@sgfc))
   {
-    return(warning("Nothing done, x@sgfc was not empty.", 
+    return(warning("Nothing done, x@sgfc was not empty.",
       "Set it to null and retry to overwrite."))
   }
 
@@ -219,7 +243,7 @@ setMethod("set.xreg", "stsm", function(x, xreg, coefs = NULL)
   }
 
   # coefficients of regressors are attached to slot "pars",
-  # otherwise the regressors would be an offset and a model 
+  # otherwise the regressors would be an offset and a model
   # without regressors could be created for y - xreg %*% xregcoefs
 
   if (isnotnull.xreg)
@@ -230,7 +254,7 @@ setMethod("set.xreg", "stsm", function(x, xreg, coefs = NULL)
     {
       #if (anyNA(match(names(coefs), xregnms))))
       if (!all(names(coefs) %in% xregnms))
-        stop("some of the names in ", dQuote("coefs"), 
+        stop("some of the names in ", dQuote("coefs"),
           " do not match the column names in ", dQuote("xreg"), ".")
       xregcoefs[names(coefs)] <- coefs
     }
@@ -281,7 +305,7 @@ valid.stsmObject <- function(object)
   if (!is.null(object@cpar))
   {
     if (any(names(object@cpar) %in% names(object@pars)))
-      stop(paste("the parameter to be concentrated out of the", 
+      stop(paste("the parameter to be concentrated out of the",
         "likelihood function is also defined in 'pars'."))
     if (any(names(object@cpar) %in% names(object@nopars)))
       stop(paste("the parameter to be concentrated out of the",
@@ -310,7 +334,7 @@ setMethod("check.bounds", "stsm", function(x)
     findInterval(x[1], c(x[2], x[3]), rightmost.closed = TRUE))
   if (!all(ref) == 1) {
     stop("some parameter values are outside lower-upper bounds.")
-  } else 
+  } else
   invisible(TRUE)
 })
 
@@ -336,17 +360,17 @@ setMethod("char2numeric", "stsm", function(x, P0cov = FALSE, rescale = FALSE)
     m
   }
 
-  # gradient=TRUE is helpful when "char2numeric" is used to 
+  # gradient=TRUE is helpful when "char2numeric" is used to
   # create "ss" to be passed is called in "KF.deriv";
-  # returning here the gradient avoids a second call to this 
+  # returning here the gradient avoids a second call to this
   # function in order to get the gradient
-  
+
   getgrad <- !is.null(x@transPars)
   pars <- get.pars(x, rescale, getgrad)
   if (getgrad)
   {
     tpGradient <- pars$gradient
-    pars <- pars$pars    
+    pars <- pars$pars
   } #else # this case is arranged at the end of this function
     #tpGradient <- NULL
 
@@ -364,7 +388,7 @@ setMethod("char2numeric", "stsm", function(x, P0cov = FALSE, rescale = FALSE)
     ss$V <- ss$Q <- rbind(allpars["var2"])
     ss$a0 <- allpars["a01"]
     ss$P0 <- rbind(allpars["P01"])
-  } else 
+  } else
   if (x@model == "local-trend")
   {
     ss$Vid <- c(0, 3)
@@ -374,7 +398,7 @@ setMethod("char2numeric", "stsm", function(x, P0cov = FALSE, rescale = FALSE)
     ss$V <- ss$Q <- diag(c(allpars["var2"], allpars["var3"]))
     ss$a0 <- c(allpars["a01"], allpars["a02"])
     ss$P0 <- diag(c(allpars["P01"], allpars["P02"]))
-  } else 
+  } else
   if (x@model == "llm+seas" && frequency(x@y) == 4)
   {
     ss$Vid <- c(0, 3)
@@ -383,11 +407,11 @@ setMethod("char2numeric", "stsm", function(x, P0cov = FALSE, rescale = FALSE)
     ss$H <- allpars["var1"]
     ss$V <- diag(c(allpars["var2"], allpars["var3"]))
     ss$Q <- rbind(cbind(ss$V,0,0),0,0)
-    ss$a0 <- c(allpars["a01"], allpars["a02"], 
+    ss$a0 <- c(allpars["a01"], allpars["a02"],
       allpars["a03"], allpars["a04"])
-    ss$P0 <- diag(c(allpars["P01"], allpars["P02"], 
+    ss$P0 <- diag(c(allpars["P01"], allpars["P02"],
       allpars["P03"], allpars["P04"]))
-  } else 
+  } else
   if (x@model == "BSM" && frequency(x@y) == 4)
   {
     ss$Vid <- NULL
@@ -396,12 +420,12 @@ setMethod("char2numeric", "stsm", function(x, P0cov = FALSE, rescale = FALSE)
     ss$H <- allpars["var1"]
     ss$V <- diag(c(allpars["var2"], allpars["var3"], allpars["var4"]))
     ss$Q <- rbind(cbind(ss$V,0,0),0,0)
-    ss$a0 <- c(allpars["a01"], allpars["a02"], 
+    ss$a0 <- c(allpars["a01"], allpars["a02"],
       allpars["a03"], allpars["a04"], allpars["a05"])
-    ss$P0 <- diag(c(allpars["P01"], allpars["P02"], 
+    ss$P0 <- diag(c(allpars["P01"], allpars["P02"],
       allpars["P03"], allpars["P04"], allpars["P05"]))
 
-  } else 
+  } else
   if (x@model == "BSM" && frequency(x@y) == 12)
   {
     ss$Vid <- NULL
@@ -410,12 +434,12 @@ setMethod("char2numeric", "stsm", function(x, P0cov = FALSE, rescale = FALSE)
     ss$H <- allpars["var1"]
     ss$V <- diag(c(allpars["var2"], allpars["var3"], allpars["var4"]))
     ss$Q <- rbind(cbind(ss$V,0,0,0,0,0,0,0,0,0,0),0,0,0,0,0,0,0,0,0,0)
-    ss$a0 <- c(allpars["a01"], allpars["a02"], 
+    ss$a0 <- c(allpars["a01"], allpars["a02"],
       allpars["a03"], allpars["a04"], allpars["a05"],
       allpars["a06"], allpars["a07"], allpars["a08"],
       allpars["a09"], allpars["a010"], allpars["a011"],
       allpars["a012"], allpars["a013"])
-    ss$P0 <- diag(c(allpars["P01"], allpars["P02"], 
+    ss$P0 <- diag(c(allpars["P01"], allpars["P02"],
       allpars["P03"], allpars["P04"], allpars["P05"],
       allpars["P06"], allpars["P07"], allpars["P08"],
       allpars["P09"], allpars["P010"], allpars["P011"],
@@ -429,14 +453,14 @@ setMethod("char2numeric", "stsm", function(x, P0cov = FALSE, rescale = FALSE)
 
     p <- 2
     ss$T <- rbind(c(1, 1, rep(0, p)), c(0, 1, rep(0, p)),
-      c(0, 0, allpars[c("phi1", "phi2")]), 
+      c(0, 0, allpars[c("phi1", "phi2")]),
       cbind(0, 0, diag(p - 1), 0))
     ss$H <- allpars["var1"]
     ss$V <- diag(c(allpars["var2"], allpars["var3"], allpars["var4"]))
     ss$Q <- rbind(cbind(ss$V, 0), 0)
-    ss$a0 <- c(allpars["a01"], allpars["a02"], 
+    ss$a0 <- c(allpars["a01"], allpars["a02"],
       allpars["a03"], allpars["a04"])
-    ss$P0 <- diag(c(allpars["P01"], allpars["P02"], 
+    ss$P0 <- diag(c(allpars["P01"], allpars["P02"],
       allpars["P03"], allpars["P04"]))
 
 #NOTE allpars["P0i"] is ignored
@@ -447,14 +471,14 @@ setMethod("char2numeric", "stsm", function(x, P0cov = FALSE, rescale = FALSE)
 #NOTE non-zero values outside the diagonal ??? maybe, because cov23 != 0
 #ss$P0 <- P0
 
-  } else 
+  } else
   if (x@model == "level+AR2")
   {
     ss$Vid <- NULL
     ss$Qid <- NULL
 
     p <- 2
-    ss$T <- rbind(c(1, 0, 0), c(0, allpars[c("phi1", "phi2")]), c(0,1,0))      
+    ss$T <- rbind(c(1, 0, 0), c(0, allpars[c("phi1", "phi2")]), c(0,1,0))
     ss$H <- allpars["var1"]
     ss$V <- diag(c(allpars["var2"], allpars["var3"]))
     ss$Q <- rbind(cbind(ss$V, 0), 0)
@@ -467,12 +491,12 @@ setMethod("char2numeric", "stsm", function(x, P0cov = FALSE, rescale = FALSE)
     ss$Vid <- NULL
     ss$Qid <- NULL
 
-    #NOTE code of original paper uses allpars["vari"]^2 
+    #NOTE code of original paper uses allpars["vari"]^2
     #i.e., the model is parameterized in terms of standar deviations
     #here in term of variances, also relevant in transPars
 
     p <- 2
-    ss$T <- rbind(c(1, 0, 0), c(0, allpars[c("phi1", "phi2")]), c(0,1,0))      
+    ss$T <- rbind(c(1, 0, 0), c(0, allpars[c("phi1", "phi2")]), c(0,1,0))
     ss$H <- allpars["var1"]
     ss$V <- diag(c(allpars["var2"], allpars["var3"]))
     ss$V[1,2] <- ss$V[2,1] <- allpars["cov23"]
@@ -496,7 +520,7 @@ ss$P0 <- P0
   } else ##NOTE currently this option is not used
   {
     ss$Z <- ss.fill(ss$Z, allpars, allnames)
-    if (is.list(ss$T)) 
+    if (is.list(ss$T))
     {
       #mT <- lapply(ss$T, FUN = eval, envir = as.list(allpars))
       if (is.matrix(ss$T[[1]])) {
@@ -537,12 +561,12 @@ ss$P0 <- P0
     # this output is intended to save doing the arrangements "KF.deriv",
     # which is likely to be called several times and is already more demanding
     #
-    # when model@transPars is NULL 
-    # the derivative with respect to the variance parameter 
+    # when model@transPars is NULL
+    # the derivative with respect to the variance parameter
     # is retured, 1, (not the derivative of transPars with respect the auxiliary
     # parameter, which would be 0 if no transformation or reparameterization is used);
     # this way is more convenient when this output used by "KF.deriv"
-    
+
     tpg.var <- rep(1, length(ss$id$var))
     names(tpg.var) <- pnms[ss$idvar]
     #ss$tpGradient <- list(var = tpg.var, phi1 = NULL, phi2 = NULL)
@@ -553,9 +577,9 @@ ss$P0 <- P0
     if (is.matrix(tpGradient)) # then "phi1" and "phi2" are defined in "pars"
     {
       ss$tpGradient <- list(var = diag(tpGradient)[ss$id$var],
-        phi1 = tpGradient["phi1",c("phi1","phi2")], 
+        phi1 = tpGradient["phi1",c("phi1","phi2")],
         phi2 = tpGradient["phi2",c("phi1","phi2")])
-    } else 
+    } else
       ss$tpGradient <- list(var = tpGradient)
   }
 

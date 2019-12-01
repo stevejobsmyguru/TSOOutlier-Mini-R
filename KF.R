@@ -138,29 +138,171 @@ KF <- function(y, ss, convergence = c(0.001, length(y)), t0 = 1)
   mll <- 0.5 * (n - t0 + 1) * log(2 * pi) + 
     0.5 * sum(lik.contrib[seq.int(t0, n)], na.rm = TRUE)
 
-  list(v = v, f = f, K = K, L = L, a.upd = a.upd, P.upd = P.upd[,,-1],
-     a.pred = a.pred, P.pred = P.pred, mll = mll, convit = convit)
-  
+  list(v = v, f = f, K = K, L = L, a.upd = a.upd, P.upd = P.upd[,,-1], #Hari commented it
+     a.pred = a.pred, P.pred = P.pred, mll = mll, convit = convit) #Hari Commented it
 }
 
-KF.C <- function(y, ss, convergence = c(0.001, length(y)), t0 = 1) #sUP = 1
+KF_Pure_R <- function(y, ss, convergence = c(0.001, length(y)), t0 = 1)
 {
   stopifnot(convergence[2] >= 1)
-  checkconv <- as.integer(convergence[2] < length(y))
-
-  y[is.na(y)] <- -9999.99
-
-  #NOTE non-diagonal matrices are passed transposed
-  mll <- .C("KF_C", 
-    dim = as.integer(c(length(y), ncol(ss$Z), ncol(ss$V), t0, checkconv)), #sUP
-    y = y, sZ = as.numeric(ss$Z), sT = as.numeric(t(ss$T)), 
-    H = as.numeric(ss$H), #sV = as.numeric(ss$V), 
-    sQ = as.numeric(ss$Q), sa0 = as.numeric(ss$a0), sP0 = as.numeric(ss$P0),
-    convtol = as.numeric(convergence[1]), convmaxiter = as.integer(convergence[2]),
-    mll = double(1), PACKAGE = "KFKSDS")$mll
-  #print(y)
+  
+  n <- length(y)
+  p <- 1 # ncol(y) univariate data
+  
+  a0 <- ss$a0
+  P0 <- ss$P0
+  Z <- ss$Z
+  mT <- ss$T
+  H <- ss$H
+  Q <- ss$Q
+  tZ <- t(Z)
+  tmT <- t(mT)
+  
+  notconv <- TRUE
+  counter <- 0
+  tol <- convergence[1]
+  maxiter <- convergence[2]
+  checkconv <- maxiter < length(y)
+  convit <- if (checkconv) 0 else NULL
+  
+  # storage vectors
+  
+  a.pred <- matrix(nrow = n, ncol = length(a0))
+  P.pred <- array(NA, dim = c(dim(P0), n))
+  a.upd <- matrix(nrow = n + 1, ncol = length(a0))
+  P.upd <- array(NA, dim = c(dim(P0), n + 1))
+  K <- matrix(nrow = n, ncol = length(a0))
+  L <- array(NA, dim = c(length(a0), length(a0), n))
+  v <- rep(NA, n)
+  f <- rep(NA, n)
+  lik.contrib <- rep(0, n)
+  
+  a.upd[1,] <- a0
+  P.upd[,,1] <- P0
+  
+  # filtering recursions
+  
+  for (i in seq_len(n))
+  {
+    a.pred[i,] <- mT %*% a.upd[i,]
+    
+    if (notconv) {
+      P.pred[,,i] <- mT %*% P.upd[,,i] %*% tmT + Q
+    } else 
+      P.pred[,,i] <- P.pred[,,i-1]
+    
+    if (!is.na(y[i]))
+    {
+      # prediction
+      
+      v[i] <- y[i] - Z %*% a.pred[i,] # prediction error
+      
+      if (notconv) {
+        Mt <- tcrossprod(P.pred[,,i], Z)
+        
+        f[i] <- Z %*% Mt + H # variance of prediction error ('gain' in arima.c)
+      } else 
+        f[i] <- f[i-1]
+      
+      # contribution to the log-likelihood
+      
+      lik.contrib[i] <- log(f[i]) + v[i]^2 / f[i]
+      
+      # updating
+      
+      K[i,] <- Mt / f[i]
+      
+      a.upd[i+1,] <- a.pred[i,] + K[i,] * v[i]
+      
+      if (notconv) {
+        P.upd[,,i+1] <- P.pred[,,i] - tcrossprod(Mt) / f[i]
+        
+        # required in this form by disturbance smoother
+        K[i,] <- mT %*% K[i,]
+        # required for Kalman smoother
+        L[,,i] <- mT - K[i,] %*% Z
+      } else {
+        P.upd[,,i+1] <- P.upd[,,i]
+        K[i,] <- K[i-1,]
+        L[,,i] <- L[,,i-1]
+      }
+      
+      # check convergence of the filter:
+      if (checkconv && notconv)
+      {
+        if (i == 1) {
+          fprev <- f[i] + tol + 1
+        }
+        
+        if (abs(f[i] - fprev) < tol)
+        {
+          # remain steady over 'maxiter' consecutive iterations
+          if (convit == i - 1)
+          {
+            counter <- counter + 1
+          } else
+            counter <- 1
+          convit <- i
+        }
+        
+        fprev <- f[i]
+        
+        ##FIXME this should be insice the if statement where counter is incremented
+        if (counter == maxiter) {
+          notconv <- FALSE # the filter has converged to a steady state
+          convit <- i
+        }
+      }
+    } else # if (is.na(y[i]))
+    {
+      a.upd[i+1,] <- a.pred[i,]
+      P.upd[,,i+1] <- P.pred[,,i]
+      #v[i] <- NA
+      #f[i] <- NA #P.pred + H
+      
+      # NOTE reset if NA is found after the filter converged
+      # for safety and also because it is a way to deal with the NA in f[i]
+      if (!notconv) {
+        notconv <- TRUE
+        counter <- 1
+      }
+    }
+  }
+  
+  if (notconv)
+    convit <- NULL
+  
+  v <- ts(v)
+  f <- ts(f)
+  a.upd <- ts(a.upd[-1,])
+  K <- ts(K)
+  tsp(v) <- tsp(f) <- tsp(a.upd) <- tsp(K) <- tsp(y)
+  
+  mll <- 0.5 * (n - t0 + 1) * log(2 * pi) + 
+    0.5 * sum(lik.contrib[seq.int(t0, n)], na.rm = TRUE)
+  
   mll
 }
+
+#Hari successfull commented out C Program. It is a major milestone. Date: 1st Dec 2019
+# KF.C <- function(y, ss, convergence = c(0.001, length(y)), t0 = 1) #sUP = 1
+# {
+#   stopifnot(convergence[2] >= 1)
+#   checkconv <- as.integer(convergence[2] < length(y))
+# 
+#   y[is.na(y)] <- -9999.99
+# 
+#   #NOTE non-diagonal matrices are passed transposed
+#   mll <- .C("KF_C", 
+#     dim = as.integer(c(length(y), ncol(ss$Z), ncol(ss$V), t0, checkconv)), #sUP
+#     y = y, sZ = as.numeric(ss$Z), sT = as.numeric(t(ss$T)), 
+#     H = as.numeric(ss$H), #sV = as.numeric(ss$V), 
+#     sQ = as.numeric(ss$Q), sa0 = as.numeric(ss$a0), sP0 = as.numeric(ss$P0),
+#     convtol = as.numeric(convergence[1]), convmaxiter = as.integer(convergence[2]),
+#     mll = double(1), PACKAGE = "KFKSDS")$mll
+#   #print(y)
+#   mll
+# }
 
 KF.deriv <- function(y, ss, xreg = NULL, convergence = c(0.001, length(y)), t0 = 1)
 {

@@ -114,7 +114,8 @@ fitted.stsm <- function(object, std.rediduals = TRUE,
   switch(version,
 
     "KFKSDS" = {
-      kf <- KFKSDS::KF(y, ss)
+      #kf <- KFKSDS::KF(y, ss) #Hari undocked KFKSDS
+      kf <- KF(y, ss) 
 
 ##FIXME return matrix in "llm" model for kf$a.upd in KFKSDS, arrange also kf$P.upd
       if (is.null(dim(kf$a.upd))) {
@@ -232,7 +233,8 @@ predict.stsm <- function(object, n.ahead = 1L, se.fit = TRUE,
 
     "KFKSDS" = {
 
-      kf <- KFKSDS::KF(y, ss)
+      #kf <- KFKSDS::KF(y, ss) #Hari undocked KFKSDS
+      kf <- KF(y, ss)
       a <- ss$T %*% kf$a.upd[nobs,]
       P <- ss$T %*% kf$P.upd[,,nobs] %*% t(ss$T) + ss$Q
 
@@ -334,8 +336,10 @@ tsSmooth.stsm <- function(object, version = c("KFKSDS", "stats"), ...)
 
     "KFKSDS" = {
       
-      kf <- KFKSDS::KF(y, ss)
-      ks <- KFKSDS::KS(y, ss, kf)
+      #kf <- KFKSDS::KF(y, ss) #Hari undocked KFKSDS
+      kf <- KF(y, ss)
+      #ks <- KFKSDS::KS(y, ss, kf) #Hari undocked KFKSDS
+      ks <- KS(y, ss, kf) #Hari moved KS method  locally (KS.R) from KFKSDS Package  
       #ks <- KSDS(y, ss, kf)
       #ks <- KalmanSmoother()
 
