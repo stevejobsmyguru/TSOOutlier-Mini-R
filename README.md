@@ -2,7 +2,6 @@
 
 Prerequistes:
  - Install R Runtime ad R Studio
- - KFKSDS R Package needs installation thru R Utility . It does  pull from CRAN-Project Site
 
 Steps to Debug this code base:
 
