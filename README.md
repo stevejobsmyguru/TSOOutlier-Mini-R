@@ -2,6 +2,9 @@
 
 Prerequistes:
  - Install R Runtime ad R Studio
+ 
+Small Note:
+  - Pls. ignore  the File upload comments in some of the R Files saying that "Need to install KFKSDS".  But I simplfied in such a way that you don't need this at all
 
 Steps to Debug this code base:
 
