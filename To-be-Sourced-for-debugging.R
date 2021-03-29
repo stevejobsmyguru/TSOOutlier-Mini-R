@@ -18,8 +18,6 @@ source('~/Documents/AlgoSoft/WarGames/Wargame_MediaSystem/BotsRunArea/TSOOutlier
 source('~/Documents/AlgoSoft/WarGames/Wargame_MediaSystem/BotsRunArea/TSOOutlier-Mini-R/mloglik-td.R')
 source('~/Documents/AlgoSoft/WarGames/Wargame_MediaSystem/BotsRunArea/TSOOutlier-Mini-R/outliers-tstatistics.R')
 source('~/Documents/AlgoSoft/WarGames/Wargame_MediaSystem/BotsRunArea/TSOOutlier-Mini-R/find-consecutive-outliers.R')
-source('~/Documents/AlgoSoft/WarGames/Wargame_MediaSystem/BotsRunArea/TSOOutlier-Mini-R/outliers-regressors-stsm.R')
-source('~/Documents/AlgoSoft/WarGames/Wargame_MediaSystem/BotsRunArea/TSOOutlier-Mini-R/outliers-regressors-arima.R')
 source('~/Documents/AlgoSoft/WarGames/Wargame_MediaSystem/BotsRunArea/TSOOutlier-Mini-R/outliers-data-frame.R')
 source('~/Documents/AlgoSoft/WarGames/Wargame_MediaSystem/BotsRunArea/TSOOutlier-Mini-R/outliers-effects.R')
 source('~/Documents/AlgoSoft/WarGames/Wargame_MediaSystem/BotsRunArea/TSOOutlier-Mini-R/outliers-tstatistics.R')
